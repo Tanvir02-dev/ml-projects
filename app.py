@@ -1,43 +1,5 @@
 import streamlit as st
 import pandas as pd
-from src.data_processing import load_data
-from src.preprocessing import preprocess_data
-from src.data_split import split_data
-from src.model_training import train_model
-from src.model_evaluation import evaluate_model
-
-st.title("🏡 Real Estate Price Prediction")
-
-uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
-
-if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-    st.write("📊 Data Preview", df.head())
-
-    # Preprocess the data
-    df = preprocess_data(df)
-
-    # Split the data
-    target_column = "price"
-    X_train, X_test, y_train, y_test = split_data(df, target_column)
-
-    # Select model type
-    model_type = st.selectbox("Choose Model", ["Linear Regression", "Random Forest"])
-    model_type = "random_forest" if model_type == "Random Forest" else "linear"
-
-    # Train the model
-    model = train_model(X_train, y_train, model_type=model_type)
-
-    # Evaluate the model
-    mae, mse, r2 = evaluate_model(model, X_test, y_test)
-
-    st.write("✅ Model Evaluation:")
-    st.write(f"📉 MAE: {mae}")
-    st.write(f"📉 MSE: {mse}")
-    st.write(f"📊 R2 Score: {r2}")
-    
-import streamlit as st
-import pandas as pd
 import matplotlib.pyplot as plt
 
 from src.data_processing import load_data
@@ -48,17 +10,17 @@ from src.model_evaluation import evaluate_model
 
 st.title("🏡 Real Estate Price Prediction & Visualizations")
 
-# Load dataset from the repo (final.csv)
-df = load_data(r'final (1).csv')
+# Load dataset from the repository
+df = load_data('final (1).csv')
 if df is None:
     st.error("Error loading dataset.")
 else:
     st.write("### Data Preview")
     st.dataframe(df.head())
 
-    # Preprocess the data for modeling
+    # Preprocess the data and train the model
     df_processed = preprocess_data(df.copy())
-    X_train, X_test, y_train, y_test = split_data(df_processed, "price")  # note: using lowercase "price"
+    X_train, X_test, y_train, y_test = split_data(df_processed, "price")  # using lowercase "price"
     model = train_model(X_train, y_train)
     mae, mse, r2 = evaluate_model(model, X_test, y_test)  # Unpack all three values
 
@@ -67,33 +29,130 @@ else:
     st.write(f"*MSE:* {mse}")
     st.write(f"*R2 Score:* {r2}")  # Display the R2 score
 
-    st.write("### Visualizations")
+    # Generate dropdown options from the dataset
+    year_sold_options = sorted(df["year_sold"].unique())
+    property_tax_options = sorted(df["property_tax"].unique())
+    insurance_options = sorted(df["insurance"].unique())
+    beds_options = sorted(df["beds"].unique())
+    baths_options = sorted(df["baths"].unique())
+    sqft_options = sorted(df["sqft"].unique())
+    year_built_options = sorted(df["year_built"].unique())
+    lot_size_options = sorted(df["lot_size"].unique())
+    property_age_options = sorted(df["property_age"].unique())
 
-    # Visualization 1: Distribution of 'price'
-    st.write("#### Distribution of Price")
-    plt.figure()
-    plt.hist(df["price"], bins=30, edgecolor='black')
-    plt.xlabel("Price")
-    plt.ylabel("Frequency")
-    plt.title("Distribution of Price")
-    st.pyplot(plt.gcf())
+    st.write("### Predict a Property Price")
+    with st.form("predict_form"):
+        st.subheader("Enter Property Details")
+        # Dropdown for each numeric input using the dataset options.
+        default_year_sold = 2007
+        idx = year_sold_options.index(default_year_sold) if default_year_sold in year_sold_options else 0
+        year_sold = st.selectbox("Year Sold", options=year_sold_options, index=idx)
+        
+        default_tax = 461
+        idx = property_tax_options.index(default_tax) if default_tax in property_tax_options else 0
+        property_tax = st.selectbox("Property Tax", options=property_tax_options, index=idx)
+        
+        default_insurance = 139
+        idx = insurance_options.index(default_insurance) if default_insurance in insurance_options else 0
+        insurance = st.selectbox("Insurance", options=insurance_options, index=idx)
+        
+        default_beds = 3
+        idx = beds_options.index(default_beds) if default_beds in beds_options else 0
+        beds = st.selectbox("Beds", options=beds_options, index=idx)
+        
+        default_baths = 3
+        idx = baths_options.index(default_baths) if default_baths in baths_options else 0
+        baths = st.selectbox("Baths", options=baths_options, index=idx)
+        
+        default_sqft = 1900
+        idx = sqft_options.index(default_sqft) if default_sqft in sqft_options else 0
+        sqft = st.selectbox("Sqft", options=sqft_options, index=idx)
+        
+        default_year_built = 1986
+        idx = year_built_options.index(default_year_built) if default_year_built in year_built_options else 0
+        year_built = st.selectbox("Year Built", options=year_built_options, index=idx)
+        
+        default_lot_size = 5846
+        idx = lot_size_options.index(default_lot_size) if default_lot_size in lot_size_options else 0
+        lot_size = st.selectbox("Lot Size", options=lot_size_options, index=idx)
+        
+        default_property_age = 21
+        idx = property_age_options.index(default_property_age) if default_property_age in property_age_options else 0
+        property_age = st.selectbox("Property Age", options=property_age_options, index=idx)
+        
+        # Dropdowns for binary/categorical variables (already dropdowns)
+        basement = st.selectbox("Basement (0 = No, 1 = Yes)", options=[0, 1])
+        popular = st.selectbox("Popular (0 = No, 1 = Yes)", options=[0, 1])
+        recession = st.selectbox("Recession (0 = No, 1 = Yes)", options=[0, 1])
+        property_type = st.selectbox("Property Type", options=["Bunglow", "Condo"])
+        
+        submitted = st.form_submit_button("Predict Price")
+    
+    if submitted:
+        # Create a dictionary for the user input
+        input_dict = {
+            "year_sold": year_sold,
+            "property_tax": property_tax,
+            "insurance": insurance,
+            "beds": beds,
+            "baths": baths,
+            "sqft": sqft,
+            "year_built": year_built,
+            "lot_size": lot_size,
+            "basement": basement,
+            "popular": popular,
+            "recession": recession,
+            "property_age": property_age,
+        }
+        # Create dummy variables for property type based on user selection
+        if property_type == "Bunglow":
+            input_dict["property_type_Bunglow"] = 1
+            input_dict["property_type_Condo"] = 0
+        else:
+            input_dict["property_type_Bunglow"] = 0
+            input_dict["property_type_Condo"] = 1
 
-    # Visualization 2: Scatter Plot between 'sqft' and 'price'
-    st.write("#### Scatter Plot: Sqft vs Price")
-    plt.figure()
-    plt.scatter(df["sqft"], df["price"], alpha=0.5)
-    plt.xlabel("Sqft")
-    plt.ylabel("Price")
-    plt.title("Sqft vs Price")
-    st.pyplot(plt.gcf())
+        # Convert the dictionary to a DataFrame
+        input_df = pd.DataFrame([input_dict])
+        # Ensure the input DataFrame has the same columns as the training data
+        input_df = input_df.reindex(columns=X_train.columns, fill_value=0)
 
-    # Visualization 3: Correlation Heatmap
-    st.write("#### Correlation Heatmap")
-    plt.figure(figsize=(10, 8))
-    corr = df.corr()
-    im = plt.imshow(corr, cmap='viridis', interpolation='none')
-    plt.colorbar(im)
-    plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
-    plt.yticks(range(len(corr.columns)), corr.columns)
-    plt.title("Correlation Heatmap")
-    st.pyplot(plt.gcf())
+        # Generate prediction
+        prediction = model.predict(input_df)[0]
+        st.write("### Predicted Price")
+        st.write(f"${prediction:,.2f}")
+
+        st.write("### Visualizations with Prediction Marker")
+        
+        # Visualization 1: Distribution of 'price' with predicted price marker
+        st.write("#### Distribution of Price")
+        plt.figure()
+        plt.hist(df["price"], bins=30, edgecolor='black')
+        plt.axvline(x=prediction, color='red', linestyle='--', label="Predicted Price")
+        plt.xlabel("Price")
+        plt.ylabel("Frequency")
+        plt.title("Distribution of Price")
+        plt.legend()
+        st.pyplot(plt.gcf())
+        
+        # Visualization 2: Scatter Plot between 'sqft' and 'price' with the input point highlighted
+        st.write("#### Scatter Plot: Sqft vs Price")
+        plt.figure()
+        plt.scatter(df["sqft"], df["price"], alpha=0.5, label="Data Points")
+        plt.scatter(sqft, prediction, color='red', s=100, label="Your Input")
+        plt.xlabel("Sqft")
+        plt.ylabel("Price")
+        plt.title("Sqft vs Price")
+        plt.legend()
+        st.pyplot(plt.gcf())
+        
+        # Visualization 3: Correlation Heatmap
+        st.write("#### Correlation Heatmap")
+        plt.figure(figsize=(10, 8))
+        corr = df.corr()
+        im = plt.imshow(corr, cmap='viridis', interpolation='none')
+        plt.colorbar(im)
+        plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
+        plt.yticks(range(len(corr.columns)), corr.columns)
+        plt.title("Correlation Heatmap")
+        st.pyplot(plt.gcf())
