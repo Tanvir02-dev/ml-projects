@@ -49,7 +49,7 @@ from src.model_evaluation import evaluate_model
 st.title("🏡 Real Estate Price Prediction & Visualizations")
 
 # Load dataset from the repo (final.csv)
-df = load_data(r'C:\Users\ssahe\OneDrive\Documents\GitHub\ml-projects\final (1).csv')
+df = load_data(r'final (1).csv')
 if df is None:
     st.error("Error loading dataset.")
 else:
