@@ -68,7 +68,7 @@ bash
 streamlit run app.py
 
 
-After running this command, your app will be accessible at [http://localhost:8501](http://localhost:8501).
+After running this command, your app will be accessible at https://tanvir02-dev-ml-projects-app-rzdhpn.streamlit.app/
 
 ---
 
